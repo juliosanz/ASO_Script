@@ -38,12 +38,14 @@ ProgramarPracticas ()
 EmpaquetarPracticas ()
 {
 	echo "Asignatura cuyas prácticas se desea empaquetar:"
-	read asignatura
+	#read asignatura
+	asignatura="ASO"
 	echo "Ruta absoluta del directorio de prácticas:"
 	valid_path=false
 	while [ $valid_path = false ]
 	do
-		read path_alumnos
+		#read path_alumnos
+		path_alumnos="/home/julio/aso/destino"
 		echo $path_alumnos
 	 	if [[ ! -d $path_alumnos ]]
 		then
@@ -60,6 +62,7 @@ EmpaquetarPracticas ()
 		tarname=$asignatura-$(date +%y%m%d-%H%M)
 		tar -C $path_alumnos -cvzf $path_alumnos/$tarname.tgz $path_alumnos/
 		path_dict["$asignatura"]=$path_alumnos
+		python3 persistencia.py $asignatura $path_alumnos 
 	fi
 }
 
@@ -74,7 +77,18 @@ InfoPaquete ()
 }
 
 in_script=true;
-declare -A path_dict 
+declare -A path_dict
+if [ $1 = -p ]
+then
+	echo "------Modo persistente------"
+	echo "La ubicación de todos los paquetes de prácticas que crees será almacenada."
+	if [[ ! -f $(pwd)/paths.json ]]
+	then
+		echo "{" >paths.json	
+		echo "	\"ignore\":\"this\"" >>paths.json
+		echo "}" >>paths.json
+	fi
+fi
 while [ $in_script = true ]
 do
 	echo "Gestión de prácticas"
