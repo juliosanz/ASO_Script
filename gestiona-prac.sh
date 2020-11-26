@@ -38,14 +38,12 @@ ProgramarPracticas ()
 EmpaquetarPracticas ()
 {
 	echo "Asignatura cuyas prácticas se desea empaquetar:"
-	#read asignatura
-	asignatura="ASO"
+	read asignatura
 	echo "Ruta absoluta del directorio de prácticas:"
 	valid_path=false
 	while [ $valid_path = false ]
 	do
-		#read path_alumnos
-		path_alumnos="/home/julio/aso/destino"
+		read path_alumnos
 		echo $path_alumnos
 	 	if [[ ! -d $path_alumnos ]]
 		then
@@ -54,18 +52,26 @@ EmpaquetarPracticas ()
 			valid_path=true
 		fi
 	done
-	echo "Se van a empaquetar las prácticas de la asignatura ASO presentes en el directorio $path_alumnos."
+	echo "Se van a empaquetar las prácticas de la asignatura $asignatura presentes en el directorio $path_alumnos."
 	echo "¿Está de acuerdo? (s/n)"
 	read acuerdo
 	if [[ $acuerdo == "s" ]]
 	then
+		stat -c%n $path_alumnos/$asignatura*
+		if [[ $? == 0 ]]
+		then
+			echo "Ya existen uno o varios comprimidos anteriores con las prácticas de esta asignatura en este directorio. ¿Deseas sobrescribirlo/s? (s/n)"
+			read acuerdo2
+			if [[ $acuerdo2 == "s" ]]
+			then
+				rm $path_alumnos/$asignatura*
+			fi
+		fi
 		tarname=$asignatura-$(date +%y%m%d-%H%M)
-		tar -C $path_alumnos -cvzf $path_alumnos/$tarname.tgz $path_alumnos/
+		tar -C $path_alumnos -cvzf $path_alumnos/$tarname.tgz $path_alumnos/*.sh
 		path_dict["$asignatura"]=$path_alumnos
-		echo $1
 		if [[ $1 == "-p" ]]
 		then
-			echo "Vamos bien"
 			echo "$asignatura:$path_alumnos" >>path
 		fi
 	fi
@@ -90,8 +96,8 @@ then
 	touch path
 	while read line   
 	do
-		key=$(cut path -d ":" -f 1)
-		value=$(cut path -d ":" -f 2)
+		key=$(echo $line | cut -d ":" -f 1)
+		value=$(echo $line | cut -d ":" -f 2)
 		path_dict["$key"]=$value	
 	done <path
 	echo "Asignaturas actuales guardadas:"
