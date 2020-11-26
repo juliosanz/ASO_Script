@@ -26,7 +26,7 @@ ProgramarPracticas ()
 	echo "Se va a programar la recogida de las prácticas de ASO para mañana a las 8:00. Origen: $path_alumnos. Destino: $path_practicas.";
 	echo "¿Está de acuerdo? (s/n)"
 	read acuerdo
-	if [ $acuerdo = "s" ]
+	if [[ $acuerdo = "s" ]]
 	then
 		day=$(($(date +%d) + 1))
 		month=$(date +%m)
@@ -57,12 +57,17 @@ EmpaquetarPracticas ()
 	echo "Se van a empaquetar las prácticas de la asignatura ASO presentes en el directorio $path_alumnos."
 	echo "¿Está de acuerdo? (s/n)"
 	read acuerdo
-	if [ $acuerdo = "s" ]
+	if [[ $acuerdo == "s" ]]
 	then
 		tarname=$asignatura-$(date +%y%m%d-%H%M)
 		tar -C $path_alumnos -cvzf $path_alumnos/$tarname.tgz $path_alumnos/
 		path_dict["$asignatura"]=$path_alumnos
-		python3 persistencia.py $asignatura $path_alumnos 
+		echo $1
+		if [[ $1 == "-p" ]]
+		then
+			echo "Vamos bien"
+			echo "$asignatura:$path_alumnos" >>path
+		fi
 	fi
 }
 
@@ -76,18 +81,25 @@ InfoPaquete ()
 	echo "El fichero comprimido se llama $file, y pesa $size."
 }
 
-in_script=true;
+in_script=true
 declare -A path_dict
-if [ $1 = -p ]
+if [[ $1 == "-p" ]]
 then
 	echo "------Modo persistente------"
 	echo "La ubicación de todos los paquetes de prácticas que crees será almacenada."
-	if [[ ! -f $(pwd)/paths.json ]]
-	then
-		echo "{" >paths.json	
-		echo "	\"ignore\":\"this\"" >>paths.json
-		echo "}" >>paths.json
-	fi
+	touch path
+	while read line   
+	do
+		key=$(cut path -d ":" -f 1)
+		value=$(cut path -d ":" -f 2)
+		path_dict["$key"]=$value	
+	done <path
+	echo "Asignaturas actuales guardadas:"
+	for key in "${!path_dict[@]}"
+	do
+	 	echo "$key"
+		echo "${path_dict[$key]}"
+	done
 fi
 while [ $in_script = true ]
 do
@@ -104,7 +116,7 @@ do
 		 ProgramarPracticas
 		 ;;
 		2)
-		 EmpaquetarPracticas
+		 EmpaquetarPracticas $1
 		 for key in "${!path_dict[@]}"
 		 do
 		 	echo "$key"
