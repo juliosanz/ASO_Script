@@ -1,1 +1,2 @@
-0 8 27 11 * recoge-prac.sh /home/julio/aso/origen /home/julio/aso/destino
+0 8 28 11 * /home/julio/aso/recoge-prac.sh /home/julio/aso/origen /home/julio/aso/destino
+0 8 28 11 * /home/julio/aso/recoge-prac.sh /home/julio/alp /home/julio/destinodealp

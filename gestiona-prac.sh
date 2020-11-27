@@ -1,5 +1,10 @@
 #!/bin/bash
 
+ErrorPrinter ()
+{
+	echo "$(date +%d-%m-%Y)	$(date +%H:%M)	$1" | tee -a informe-prac.log
+}
+
 ProgramarPracticas () 
 {
 	echo "Asignatura cuyas prácticas desea recoger:"
@@ -9,10 +14,9 @@ ProgramarPracticas ()
 	while [ $valid_path = false ]
 	do
 		read path_alumnos
-		echo $path_alumnos
 	 	if [[ ! -d $path_alumnos ]]
 		then
-			echo "Este directorio ($path_alumnos) no existe. Introduce uno válido." | tee -a informe-prac.log
+			ErrorPrinter "Este directorio ($path_alumnos) no existe. Introduce uno válido."
 		else
 			valid_path=true
 		fi
@@ -30,7 +34,7 @@ ProgramarPracticas ()
 	then
 		day=$(($(date +%d) + 1))
 		month=$(date +%m)
-		echo "0 8 $day $month * recoge-prac.sh $path_alumnos $path_practicas" >crontab-schedule 
+		echo "0 8 $day $month * /home/julio/aso/recoge-prac.sh $path_alumnos $path_practicas" >>crontab-schedule 
 		crontab crontab-schedule 
 	fi
 }
@@ -44,10 +48,9 @@ EmpaquetarPracticas ()
 	while [ $valid_path = false ]
 	do
 		read path_alumnos
-		echo $path_alumnos
 	 	if [[ ! -d $path_alumnos ]]
 		then
-			echo "Este directorio de prácticas ($path_alumnos) no existe. Introduce uno válido." | tee -a informe-prac.log
+			ErrorPrinter "Este directorio de prácticas ($path_alumnos) no existe. Introduce uno válido."
 		else
 			valid_path=true
 		fi
@@ -57,7 +60,7 @@ EmpaquetarPracticas ()
 	read acuerdo
 	if [[ $acuerdo == "s" ]]
 	then
-		stat -c%n $path_alumnos/$asignatura*
+		stat -c%n $path_alumnos/$asignatura* 1>/dev/null 2>$1
 		if [[ $? == 0 ]]
 		then
 			echo "Ya existen uno o varios comprimidos anteriores con las prácticas de esta asignatura en este directorio. ¿Deseas sobrescribirlo/s? (s/n)"
@@ -68,11 +71,17 @@ EmpaquetarPracticas ()
 			fi
 		fi
 		tarname=$asignatura-$(date +%y%m%d-%H%M)
-		tar -C $path_alumnos -cvzf $path_alumnos/$tarname.tgz $path_alumnos/*.sh
-		path_dict["$asignatura"]=$path_alumnos
-		if [[ $1 == "-p" ]]
+		tar -C $path_alumnos -cvzf $path_alumnos/$tarname.tgz $path_alumnos/*.sh 2>/dev/null
+		if [[ $? != 0 ]]
 		then
-			echo "$asignatura:$path_alumnos" >>path
+			ErrorPrinter "En este directorio no hay prácticas que empaquetar. No se creará ningún paquete."
+			rm *.tgz
+		else	
+			path_dict["$asignatura"]=$path_alumnos
+			if [[ $1 == "-p" ]]
+			then
+				echo "$asignatura:$path_alumnos" >>path
+			fi
 		fi
 	fi
 }
@@ -82,9 +91,16 @@ InfoPaquete ()
 	echo "Asignatura sobre la que se quiere información:"
 	read asignatura
 	dir=${path_dict["$asignatura"]}
-	file=$(ls $dir | grep "^$asignatura")
-	size=$(stat -c%s "$dir/$file")
-	echo "El fichero comprimido se llama $file, y pesa $size."
+	dirlength=${#dir}
+	echo $dirlength
+	if [[ $dirlength == 0 ]]
+	then
+		ErrorPrinter "La asignatura $asignatura no existe."
+	else
+		file=$(ls $dir | grep "^$asignatura")
+		size=$(stat -c%s "$dir/$file")
+		echo "El fichero comprimido se llama $file, y pesa $size."
+	fi
 }
 
 in_script=true
@@ -134,6 +150,9 @@ do
 		 ;;
 		4)
 		 in_script=false
+		 ;;
+		*)
+		 ErrorPrinter "El valor introducido no es válido. Por favor, introduce uno de los valores que se muestran en el menú."
 		 ;;
 	esac
 done
