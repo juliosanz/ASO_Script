@@ -34,7 +34,7 @@ ProgramarPracticas ()
 	then
 		day=$(($(date +%d) + 1))
 		month=$(date +%m)
-		echo "0 8 $day $month * /home/julio/aso/recoge-prac.sh $path_alumnos $path_practicas" >>crontab-schedule 
+		echo "0 8 $day $month * $(pwd)/recoge-prac.sh $path_alumnos $path_practicas" >>crontab-schedule 
 		crontab crontab-schedule 
 	fi
 }
@@ -60,7 +60,7 @@ EmpaquetarPracticas ()
 	read acuerdo
 	if [[ $acuerdo == "s" ]]
 	then
-		stat -c%n $path_alumnos/$asignatura* 1>/dev/null 2>$1
+		stat -c%n $path_alumnos/$asignatura* 1>/dev/null 2>/dev/null
 		if [[ $? == 0 ]]
 		then
 			echo "Ya existen uno o varios comprimidos anteriores con las prácticas de esta asignatura en este directorio. ¿Deseas sobrescribirlo/s? (s/n)"
@@ -99,14 +99,11 @@ InfoPaquete ()
 	else
 		file=$(ls $dir | grep "^$asignatura")
 		size=$(stat -c%s "$dir/$file")
-		echo "El fichero comprimido se llama $file, y pesa $size."
+		echo "El fichero comprimido se llama $file, pesa $size, y está en $dir."
 	fi
 }
 
-in_script=true
-declare -A path_dict
-if [[ $1 == "-p" ]]
-then
+ComprobarPersistencia () {
 	echo "------Modo persistente------"
 	echo "La ubicación de todos los paquetes de prácticas que crees será almacenada."
 	touch path
@@ -122,6 +119,13 @@ then
 	 	echo "$key"
 		echo "${path_dict[$key]}"
 	done
+}
+
+in_script=true
+declare -A path_dict
+if [[ $1 == "-p" ]]
+then
+	ComprobarPersistencia
 fi
 while [ $in_script = true ]
 do
